@@ -17,3 +17,10 @@ export function isValidPriority(priority) {
 export function normalizeToArray(obj) {
   return Array.isArray(obj) ? obj : [obj];
 }
+
+// Bulk adds an array of text values as classes
+export function addHTMLClasses(obj, classes = []) {
+  normalizeToArray(classes)
+    .filter((e) => isValidString(e))
+    .forEach((e) => obj.classList.add(e));
+}

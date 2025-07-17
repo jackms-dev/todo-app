@@ -1,4 +1,9 @@
-import { isValidPriority, isValidString, normalizeToArray } from "./helpers.js";
+import {
+  isValidPriority,
+  isValidString,
+  normalizeToArray,
+  addHTMLClasses,
+} from "./helpers.js";
 
 // Factory function to create todo objects
 class Todo {
@@ -40,13 +45,17 @@ class Todo {
   removePriority() {
     this.priority = null;
   }
-  setTodo(todo, settings = {}) {
-    const { description, priority, isComplete } = settings;
-    if (description) todo.setDescription(description);
-    if (priority) todo.setPriority(priority);
-    if (isComplete) todo.setComplete(isComplete);
+  setId(id) {
+    if (isValidString(id)) this.#id = id;
   }
-  stringifyToDo() {
+  setTodo(settings = {}) {
+    const { description, priority, isComplete, id } = settings;
+    if (description) this.setDescription(description);
+    if (priority) this.setPriority(priority);
+    if (isComplete) this.setComplete(isComplete);
+    if (id) this.setId(id);
+  }
+  stringifyTodo() {
     return JSON.stringify(this);
   }
 }
@@ -59,8 +68,8 @@ const todoGroup = (todos = []) => {
         (e) => e instanceof Todo && isValidString(e.description)
       )
     ),
-    findTodo(todo) {
-      return [...this.list].find((e) => e.description == todo);
+    findTodo(description) {
+      return [...this.list].find((e) => e.description == description);
     },
     hasTodo(todo) {
       return this.list.has(todo);
@@ -78,53 +87,63 @@ const todoGroup = (todos = []) => {
   };
 };
 
+function renderTodoData(obj) {
+  obj = obj.summary();
+  const todoData = document.createElement("div");
+  todoData.classList.add("todo-data");
+
+  const checker = document.createElement("input");
+  checker.type = "checkbox";
+  checker.classList.add("checker");
+  checker.name = obj?.description;
+  if (obj?.isComplete) {
+    checker.checked = true;
+    checker.classList.add("checker-complete");
+  }
+
+  const description = document.createElement("label");
+  description.htmlFor = obj?.description;
+  description.classList.add("todo-label");
+  description.innerHTML = obj?.description;
+
+  todoData.append(checker, description);
+
+  return todoData;
+}
+
+function renderTodoPriority(obj) {
+  const todoPriority = document.createElement("div");
+  todoPriority.classList.add("priority");
+
+  const priority = document.createElement("p");
+  priority.classList.add("priority-label");
+  priority.innerHTML = obj?.priority;
+
+  todoPriority.append(priority);
+
+  return todoPriority;
+}
+
 function renderTodo(obj) {
   if (obj instanceof Todo) {
     const todo = document.createElement("div");
+    todo.id = todo.summary().id;
     todo.classList.add("todo");
     todo.dataset.todo = obj?.description;
 
-    const checkWrap = document.createElement("div");
-    checkWrap.classList.add("todo-data-wrap");
-    // Styles – delete
-    checkWrap.style.display = "flex";
-    checkWrap.style.gap = "8px";
+    const todoData = renderTodoData(obj);
+    const todoPriority = renderTodoPriority(obj);
 
-    const checker = document.createElement("div");
-    checker.classList.add("checker");
-    // Styles – delete
-    checker.style.width = "32px";
-    checker.style.height = "32px";
-    checker.style.border = "1px solid black";
+    todoData.addEventListener("click", markComplete);
 
-    const descriptionLabel = document.createElement("div");
-    descriptionLabel.classList.add("todo-label");
-
-    const description = document.createElement("p");
-    description.innerHTML = obj?.description;
-
-    descriptionLabel.append(description);
-
-    checkWrap.append(checker, descriptionLabel);
-
-    const priorityLabel = document.createElement("div");
-    priorityLabel.classList.add("priority");
-
-    const priority = document.createElement("p");
-    priority.innerHTML = obj?.priority;
-
-    checkWrap.addEventListener("click", markComplete);
-
-    priorityLabel.append(priority);
-
-    todo.append(checkWrap, priorityLabel);
+    todo.append(todoData, todoPriority);
 
     return todo;
   }
 }
 
 function formTextInput(settings = {}) {
-  let {
+  const {
     formid,
     id,
     classes = [],
@@ -134,7 +153,7 @@ function formTextInput(settings = {}) {
     autofocus,
   } = settings;
 
-  let input = document.createElement("input");
+  const input = document.createElement("input");
   input.type = "text";
 
   if (id && isValidString(id)) input.id = id;
@@ -145,15 +164,13 @@ function formTextInput(settings = {}) {
   if (typeof required == "boolean") input.required = required;
   if (typeof autofocus == "boolean") input.autofocus = autofocus;
 
-  normalizeToArray(classes)
-    .filter((e) => isValidString(e))
-    .forEach((e) => input.classList.add(e));
+  addHTMLClasses(input, classes);
 
   return input;
 }
 
 function formSelect(settings = {}) {
-  let {
+  const {
     formid,
     id,
     classes = [],
@@ -164,8 +181,7 @@ function formSelect(settings = {}) {
     placeholder,
   } = settings;
 
-  let select = document.createElement("select");
-  select.classList = "select";
+  const select = document.createElement("select");
 
   if (id && isValidString(id)) select.id = id;
   if (formid && isValidString(formid)) select.setAttribute("form", formid);
@@ -173,35 +189,35 @@ function formSelect(settings = {}) {
   if (typeof multiple == "boolean") select.multiple = multiple;
   if (typeof required == "boolean") select.required = required;
 
+  addHTMLClasses(select, classes);
+
   if (placeholder && isValidString(placeholder)) {
-    let placeholderOpt = document.createElement("option");
+    const placeholderOpt = document.createElement("option");
+    placeholderOpt.classList.add("input-select-option");
     placeholderOpt.value = "";
     placeholderOpt.selected = true;
     placeholderOpt.textContent = placeholder;
     select.append(placeholderOpt);
   }
 
-  normalizeToArray(classes)
+  options
     .filter((e) => isValidString(e))
-    .forEach((e) => select.classList.add(e));
-
-  options.forEach((e) => {
-    let option = document.createElement("option");
-    option.classList.add("select-option");
-    option.value = `${e}`;
-    option.textContent = e[0].toUpperCase() + e.slice(1);
-    select.append(option);
-  });
+    .forEach((e) => {
+      const option = document.createElement("option");
+      option.classList.add("input-select-option");
+      option.value = `${e}`;
+      option.textContent = e[0].toUpperCase() + e.slice(1);
+      select.append(option);
+    });
 
   return select;
 }
 
 // Renders a button for the todo form
 function formButton(settings = {}) {
-  let { formid, type, value, id, action } = settings;
+  const { formid, type, value, id, classes = [], action } = settings;
 
-  let button = document.createElement("input");
-  button.classList = "button";
+  const button = document.createElement("input");
 
   if (id && isValidString(id)) button.id = id;
   if (formid && isValidString(formid)) button.setAttribute("form", formid);
@@ -209,6 +225,8 @@ function formButton(settings = {}) {
   if (value && isValidString(value)) button.value = value;
   if (action && typeof action == "function")
     button.addEventListener("click", action);
+
+  addHTMLClasses(button, classes);
 
   return button;
 }
@@ -221,7 +239,7 @@ function renderTodoForm() {
   let todoDescription = formTextInput({
     formid: form.id,
     id: "new-todo-description",
-    classes: ["text-input"],
+    classes: ["input", "input-text"],
     name: "description",
     placeholder: "Add description",
     required: true,
@@ -231,7 +249,7 @@ function renderTodoForm() {
   let todoPriority = formSelect({
     formid: form.id,
     id: "new-todo-priority",
-    classes: ["select"],
+    classes: ["input", "input-select"],
     name: "priority",
     options: ["low", "medium", "high"],
     placeholder: "Select priority",
@@ -244,6 +262,7 @@ function renderTodoForm() {
     id: "new-todo-add",
     type: "submit",
     value: "Add todo",
+    classes: ["button"],
   });
 
   let cancelButton = formButton({
@@ -251,6 +270,7 @@ function renderTodoForm() {
     id: "new-todo-cancel",
     type: "button",
     value: "Cancel",
+    classes: ["button"],
     action: cancelTodo,
   });
 
@@ -265,6 +285,7 @@ function renderTodoForm() {
 function renderAddTodoButton() {
   let button = document.createElement("button");
   button.id = "add-todo";
+  button.classList.add("button");
   button.textContent = "New todo";
   button.addEventListener("click", addTodo);
   return button;
@@ -288,16 +309,19 @@ function addTodo(event) {
   );
 }
 
+// Removes the new todo form if the cancel button is clicked
 function cancelTodo(event) {
   let form = document.getElementById("new-todo");
   let addTodoButton = document.getElementById("add-todo");
   if (form && !addTodoButton) form.replaceWith(renderAddTodoButton());
-  dispatchEvent(new CustomEvent("cancel-todo"), {
-    bubbles: true,
-    detail: {
-      target: event?.target,
-    },
-  });
+  dispatchEvent(
+    new CustomEvent("cancel-todo", {
+      bubbles: true,
+      detail: {
+        target: event?.target,
+      },
+    })
+  );
 }
 
 // Runs when new todo form is submitted
@@ -305,8 +329,7 @@ function submitNewTodo(event) {
   event.preventDefault();
 
   // Retrieve form data
-  let form = document.getElementById("new-todo");
-  let formData = new FormData(form);
+  let formData = new FormData(document.getElementById("new-todo"));
 
   if (isValidString(formData.get("description"))) {
     // Add todo to group
@@ -324,29 +347,46 @@ function submitNewTodo(event) {
 
 // Takes a Todo object as data and passes it to localStorage
 function updateStorage(todo) {
-  const todoSum = todo.summary();
+  if (todo instanceof Todo && isValidString(todo.description)) {
+    const todoObj = todo.summary();
+    let todos = [];
+    const stored = localStorage.getItem("todos");
+    if (stored) todos = JSON.parse(stored);
 
-  let todos = [];
-  const stored = localStorage.getItem("todos");
-  if (stored) todos = JSON.parse(stored);
+    let todoInStorage = todos.find((e) => e?.id == todoObj.id);
+    if (todoInStorage) {
+      todos[todos.indexOf(todoInStorage)] = todoObj;
+    } else {
+      todos.push(todoObj);
+    }
 
-  let el = todos.find((e) => e?.id == todoSum.id);
-
-  if (el) {
-    todos[todos.indexOf(el)] = todo.summary();
-  } else {
-    todos.push(todo.summary());
+    localStorage.setItem("todos", JSON.stringify(todos));
+    printTodosToConsole();
   }
-  localStorage.setItem("todos", JSON.stringify(todos));
 }
 
+// Prints the status of both the data object (group) and localStorage to the console
+function printTodosToConsole() {
+  console.log(group);
+  for (let i in localStorage) {
+    const key = localStorage.key(i);
+    const value = localStorage.getItem(key);
+    console.log(`${key}: ${value}`);
+  }
+}
+
+// Event that marks the todo as complete
 function markComplete(event) {
   const closestSrc = event.target.closest("[data-todo]").dataset.todo;
   const todo = group.findTodo(closestSrc);
 
-  if (todo) {
+  if (closestSrc && todo) {
     todo.toggleComplete();
     updateStorage(todo);
+    updateCheckboxUI(
+      event.currentTarget.querySelector(".checker"),
+      todo.summary().isComplete
+    );
   }
 
   dispatchEvent(
@@ -358,6 +398,14 @@ function markComplete(event) {
       },
     })
   );
+}
+
+// Updated the check on the checkbox of the todo
+function updateCheckboxUI(checkbox, isComplete) {
+  checkbox.checked = isComplete;
+  isComplete
+    ? checkbox.classList.add("checker-complete")
+    : checkbox.classList.remove("checker-complete");
 }
 
 // Renters the todo group
@@ -381,6 +429,7 @@ const addButton = renderAddTodoButton();
 
 const groupWrap = document.createElement("div");
 groupWrap.id = "group";
+
 // Event listener for todos marked complete
 groupWrap.addEventListener("mark-complete", markComplete);
 

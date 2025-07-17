@@ -15,5 +15,8 @@
     "url": "https://github.com/jackms-dev/todo-app/issues"
   },
   "homepage": "https://github.com/jackms-dev/todo-app#readme",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "@csstools/normalize.css": "^12.1.1"
+  }
 }

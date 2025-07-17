@@ -1,0 +1,78 @@
+/* Wrapper element of todo item */
+.todo {
+}
+
+/* Wrapper element within .todo */
+/* Contains checkbox and todo description */
+.todo-data {
+}
+
+/* Checkbox input on todo */
+.checker {
+  accent-color: red;
+}
+
+/* Checkbox when a todo is complete */
+.checker-complete {
+}
+
+/* Label used on checkbox input for todo */
+/* Used to hold todo description */
+.todo-label {
+}
+
+/* Wrapper used on todo priority */
+.priority {
+}
+
+/* Text used for priority label */
+.priority-label {
+}
+
+/* Todo form */
+#new-todo {
+}
+
+/* Todo form – description */
+#new-todo-description {
+}
+
+/* Todo form – priority */
+#new-todo-priority {
+}
+
+/* Todo form – Add button */
+#new-todo-add {
+}
+
+/* Todo form – Cancel button */
+#new-todo-cancel {
+}
+
+/* Add button to render the new todo form */
+#add-todo {
+}
+
+/* Components */
+
+/* Inputs */
+
+/* All inputs */
+.input {
+}
+
+/* Text input */
+.input-text {
+}
+
+/* Select inputs */
+.input-select {
+}
+
+/* Options for selects */
+.input-select-option {
+}
+
+/* Buttons */
+.button {
+}
